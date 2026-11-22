@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="4v4 Tactical Strike — a browser-based 3D tactical FPS. Team Deathmatch, four maps, AI squadmates and enemies." />
+  <title>4v4 Tactical Strike</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23101418'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23f0a030' stroke-width='2'/%3E%3Cpath d='M16 2v8M16 22v8M2 16h8M22 16h8' stroke='%23f0a030' stroke-width='2'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div class="team-score blue"><span class="lbl">BLUE</span><span id="sc-blue">0</span></div>
+      <div id="timer-box"><div id="timer">0:00</div><div id="goal">FIRST TO 15</div></div>
+      <div class="team-score red"><span id="sc-red">0</span><span class="lbl">RED</span></div>
+    </div>
+    <div id="alive"><span class="blue" id="alive-blue">TEAMMATES 3</span><span class="sep">•</span><span class="red" id="alive-red">ENEMIES 4</span></div>
+    <div id="minimap-wrap"><canvas id="minimap" width="220" height="220"></canvas></div>
+    <div id="killfeed"></div>
+    <div id="crosshair"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i><i class="dot"></i></div>
+    <div id="hitmarker"></div>
+    <div id="dmg-ind"><i></i></div>
+    <div id="vignette"></div>
+    <div id="center-msg"></div>
+    <div id="hint"></div>
+    <div id="hud-bl">
+      <div class="bar"><span class="ico">✚</span><div class="track"><div id="hp-fill"></div></div><span id="hp-num">100</span></div>
+      <div class="bar armor"><span class="ico">⛨</span><div class="track"><div id="ar-fill"></div></div><span id="ar-num">0</span></div>
+    </div>
+    <div id="hud-br">
+      <div id="weapon-name">AR-7</div>
+      <div id="ammo"><span id="ammo-mag">30</span><span class="slash">/</span><span id="ammo-res">120</span></div>
+      <div id="reload-bar"><div id="reload-fill"></div></div>
+      <div id="slots"></div>
+    </div>
+    <div id="scope"><div class="ret-h"></div><div class="ret-v"></div></div>
+    <div id="death-overlay"><div class="big">YOU DIED</div><div id="death-by"></div><div id="respawn-in"></div></div>
+  </div>
+
+  <!-- ============ SCOREBOARD (hold Tab) ============ -->
+  <div id="scoreboard" class="hidden"><div class="panel"><div id="sb-body"></div></div></div>
+
+  <!-- ============ SCREENS ============ -->
+  <div id="loading" class="screen"><div class="spinner"></div><div id="loading-text">LOADING PHYSICS…</div></div>
+
+  <div id="screen-main" class="screen hidden">
+    <div class="menu-shell">
+      <div class="brand">
+        <div class="brand-tag">TACTICAL FPS // TEAM DEATHMATCH</div>
+        <h1><span>4V4</span> TACTICAL<br/>STRIKE</h1>
+        <p class="brand-sub">Four maps. Eight operators. Enemy squads that flank, hold angles and fall back when hurt.</p>
+      </div>
+      <nav class="menu-list">
+        <button class="btn primary" data-act="play">PLAY GAME</button>
+        <button class="btn" data-act="settings">SETTINGS</button>
+        <button class="btn" data-act="controls">CONTROLS</button>
+        <button class="btn danger" data-act="reset-stats">RESET STATS</button>
+      </nav>
+      <div class="stats-card" id="stats-card"></div>
+    </div>
+    <div class="foot">Desktop browser • Chrome / Edge / Firefox • Mouse + keyboard</div>
+  </div>
+
+  <div id="screen-controls" class="screen hidden">
+    <div class="panel wide">
+      <h2>CONTROLS</h2>
+      <div class="keys">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
+        <div><kbd>Mouse</kbd><span>Look</span></div>
+        <div><kbd>Left click</kbd><span>Shoot</span></div>
+        <div><kbd>Right click</kbd><span>Aim / scope</span></div>
+        <div><kbd>R</kbd><span>Reload</span></div>
+        <div><kbd>1</kbd>–<kbd>5</kbd><span>Pistol · Rifle · SMG · Shotgun · Sniper</span></div>
+        <div><kbd>Shift</kbd><span>Sprint</span></div>
+        <div><kbd>Space</kbd><span>Jump</span></div>
+        <div><kbd>Tab</kbd><span>Scoreboard (hold)</span></div>
+        <div><kbd>Esc</kbd><span>Pause</span></div>
+      </div>
+      <p class="tip">Tip: shoot red barrels to blow up enemies standing next to them. Headshots deal extra damage. Bots only know what they see or hear — break line of sight and they lose you.</p>
+      <div class="row"><button class="btn primary" data-act="back">BACK</button></div>
+    </div>
+  </div>
+
+  <div id="screen-play" class="screen hidden">
+    <div class="panel wide">
+      <div class="stepper" id="stepper">
+        <button data-step="0" class="active"><b>1</b> MAP</button>
+        <button data-step="1"><b>2</b> DIFFICULTY</button>
+        <button data-step="2"><b>3</b> LOADOUT</button>
+      </div>
+      <div class="step" id="step-0"><h2>SELECT MAP</h2><div class="cards" id="map-cards"></div></div>
+      <div class="step hidden" id="step-1"><h2>SELECT DIFFICULTY</h2><div class="cards four" id="diff-cards"></div></div>
+      <div class="step hidden" id="step-2"><h2>STARTING WEAPON</h2><div class="cards five" id="weapon-cards"></div><p class="tip">You can switch between all five weapons in-game with 1–5.</p></div>
+      <div class="row split">
+        <button class="btn" data-act="play-back" id="btn-back">BACK</button>
+        <div class="summary" id="summary"></div>
+        <button class="btn primary" data-act="play-next" id="btn-next">NEXT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-settings" class="screen hidden">
+    <div class="panel">
+      <h2>SETTINGS</h2>
+      <label class="field"><span>Mouse sensitivity <b id="v-sens"></b></span><input type="range" id="set-sens" min="0.2" max="3" step="0.05" /></label>
+      <label class="field"><span>Field of view <b id="v-fov"></b></span><input type="range" id="set-fov" min="60" max="100" step="1" /></label>
+      <label class="field"><span>Master volume <b id="v-vol"></b></span><input type="range" id="set-vol" min="0" max="1" step="0.05" /></label>
+      <div class="field"><span>Graphics quality</span>
+        <div class="seg" id="set-quality"><button data-q="low">LOW</button><button data-q="medium">MEDIUM</button><button data-q="high">HIGH</button></div>
+      </div>
+      <p class="tip">Low: no shadows, reduced resolution — best for older laptops.</p>
+      <div class="row"><button class="btn primary" data-act="back">BACK</button></div>
+    </div>
+  </div>
+
+  <div id="screen-pause" class="screen hidden">
+    <div class="panel narrow">
+      <h2>PAUSED</h2>
+      <button class="btn primary" data-act="resume">RESUME</button>
+      <button class="btn" data-act="settings">SETTINGS</button>
+      <button class="btn" data-act="controls">CONTROLS</button>
+      <button class="btn danger" data-act="quit">QUIT TO MENU</button>
+    </div>
+  </div>
+
+  <div id="screen-result" class="screen hidden">
+    <div class="panel wide">
+      <div id="result-title" class="result-title">VICTORY</div>
+      <div id="result-score" class="result-score"></div>
+      <div id="result-table"></div>
+      <div id="result-stats" class="result-stats"></div>
+      <div class="row">
+        <button class="btn primary" data-act="rematch">REMATCH</button>
+        <button class="btn" data-act="change-map">CHANGE MAP</button>
+        <button class="btn" data-act="quit">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="webgl-error" class="screen hidden"><div class="panel narrow"><h2>WEBGL UNAVAILABLE</h2><p>This game needs WebGL 2. Please use a recent desktop version of Chrome, Edge or Firefox with hardware acceleration enabled.</p></div></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

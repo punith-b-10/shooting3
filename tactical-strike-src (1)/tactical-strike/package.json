@@ -1,0 +1,29 @@
+{
+  "name": "tactical-strike",
+  "version": "1.0.0",
+  "description": "4v4 Tactical Strike - a browser 3D tactical FPS built with Three.js, TypeScript, Vite and Rapier",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx scripts/map-check.ts && tsx scripts/sim-test.ts 1 desert,urban,warehouse,forest hard",
+    "map-check": "tsx scripts/map-check.ts",
+    "sim": "tsx scripts/sim-test.ts",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "wrangler": "^4.0.0"
+  },
+  "private": true,
+  "type": "module"
+}
